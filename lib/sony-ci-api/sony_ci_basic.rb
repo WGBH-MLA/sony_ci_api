@@ -50,7 +50,7 @@ class SonyCiBasic
     Downloader.new(self).download(asset_id)
   end
 
-  class CiClient
+  class CiClient #:nodoc:
     # This class hierarchy might be excessive, but it gives us:
     # - a single place for the `perform` method
     # - and an isolated container for related private methods
@@ -66,7 +66,7 @@ class SonyCiBasic
     end
   end
 
-  class Downloader < CiClient
+  class Downloader < CiClient #:nodoc:
     @@cache = {}
 
     def initialize(ci)

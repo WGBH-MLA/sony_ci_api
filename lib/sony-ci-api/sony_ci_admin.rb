@@ -38,7 +38,7 @@ class SonyCiAdmin < SonyCiBasic
     Detailer.new(self).detail(asset_id)
   end
 
-  class CiClient
+  class CiClient #:nodoc:
     # This class hierarchy might be excessive, but it gives us:
     # - a single place for the `perform` method
     # - and an isolated container for related private methods
@@ -54,7 +54,7 @@ class SonyCiAdmin < SonyCiBasic
     end
   end
 
-  class Detailer < CiClient
+  class Detailer < CiClient #:nodoc:
     def initialize(ci)
       @ci = ci
     end
@@ -67,7 +67,7 @@ class SonyCiAdmin < SonyCiBasic
     end
   end
 
-  class Deleter < CiClient
+  class Deleter < CiClient #:nodoc:
     def initialize(ci)
       @ci = ci
     end
@@ -79,7 +79,7 @@ class SonyCiAdmin < SonyCiBasic
     end
   end
 
-  class Lister < CiClient
+  class Lister < CiClient #:nodoc:
     include Enumerable
 
     def initialize(ci)
@@ -106,7 +106,7 @@ class SonyCiAdmin < SonyCiBasic
     end
   end
 
-  class Uploader < CiClient
+  class Uploader < CiClient #:nodoc:
     def initialize(ci, path, log_path)
       @ci = ci
       @path = path
