@@ -7,6 +7,7 @@ class SonyCiBasic
   attr_reader :verbose
   attr_reader :workspace_id
 
+  # Either +credentials_path+ or a +credentials+ object itself must be supplied.
   def initialize(opts={}) # rubocop:disable PerceivedComplexity, CyclomaticComplexity
     unrecognized_opts = opts.keys - [:verbose, :credentials_path, :credentials]
     fail "Unrecognized options #{unrecognized_opts}" unless unrecognized_opts == []
@@ -44,6 +45,7 @@ class SonyCiBasic
     @workspace_id = credentials['workspace_id']
   end
 
+  # Generate a temporary download URL for an asset.
   def download(asset_id)
     Downloader.new(self).download(asset_id)
   end
@@ -83,50 +85,4 @@ class SonyCiBasic
       @@cache[asset_id][:url]
     end
   end
-end
-
-if __FILE__ == $PROGRAM_NAME
-  args = begin
-    Hash[ARGV.slice_before { |a| a.match(/^--/) }.to_a.map { |a| [a[0].gsub(/^--/, ''), a[1..-1]] }]
-  rescue
-    {}
-  end
-
-  ci = Ci.new(
-    # verbose: true,
-    credentials_path: Rails.root + 'config/ci.yml')
-
-  begin
-    case args.keys.sort
-
-    when ['log', 'up']
-      fail ArgumentError.new if args['log'].empty? || args['up'].empty?
-      args['up'].each { |path| ci.upload(path, args['log'].first) }
-
-    when ['down']
-      fail ArgumentError.new if args['down'].empty?
-      args['down'].each { |id| puts ci.download(id) }
-
-    when ['list']
-      fail ArgumentError.new unless args['list'].empty?
-      ci.each { |asset| puts "#{asset['name']}\t#{asset['id']}" }
-
-    when ['recheck']
-      fail ArgumentError.new if args['recheck'].empty?
-      args['recheck'].each do |file|
-        File.foreach(file) do |line|
-          line.chomp!
-          id = line.split("\t")[2]
-          detail = ci.detail(id).to_s.gsub("\n", ' ')
-          puts line + "\t" + detail
-        end
-      end
-
-    else
-      fail ArgumentError.new
-    end
-  rescue ArgumentError
-    abort 'Usage: --up GLOB --log LOG_FILE | --down ID | --list | --recheck LOG_FILE'
-  end
-
 end

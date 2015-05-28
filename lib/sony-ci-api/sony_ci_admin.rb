@@ -6,27 +6,34 @@ require_relative 'sony_ci_basic'
 class SonyCiAdmin < SonyCiBasic
   include Enumerable
 
+  # Upload a document to Ci. Underlying API treats large and small files
+  # differently, but this should treat both alike.
   def upload(file_path, log_file)
     Uploader.new(self, file_path, log_file).upload
   end
 
+  # Just the names of items in the workspace. This may include directories.
   def list_names
     list.map { |item| item['name'] } - ['Workspace']
     # A self reference is present even in an empty workspace.
   end
 
+  # Full metadata for a windowed set of items.
   def list(limit=50, offset=0)
     Lister.new(self).list(limit, offset)
   end
 
+  # Iterate over all items.
   def each
     Lister.new(self).each { |asset| yield asset }
   end
 
+  # Delete items by asset ID.
   def delete(asset_id)
     Deleter.new(self).delete(asset_id)
   end
 
+  # Get detailed metadata by asset ID.
   def detail(asset_id)
     Detailer.new(self).detail(asset_id)
   end
@@ -170,51 +177,5 @@ class SonyCiAdmin < SonyCiBasic
       end
     end
   end
-end
-
-if __FILE__ == $PROGRAM_NAME
-  args = begin
-    Hash[ARGV.slice_before { |a| a.match(/^--/) }.to_a.map { |a| [a[0].gsub(/^--/, ''), a[1..-1]] }]
-  rescue
-    {}
-  end
-
-  ci = Ci.new(
-    # verbose: true,
-    credentials_path: Rails.root + 'config/ci.yml')
-
-  begin
-    case args.keys.sort
-
-    when ['log', 'up']
-      fail ArgumentError.new if args['log'].empty? || args['up'].empty?
-      args['up'].each { |path| ci.upload(path, args['log'].first) }
-
-    when ['down']
-      fail ArgumentError.new if args['down'].empty?
-      args['down'].each { |id| puts ci.download(id) }
-
-    when ['list']
-      fail ArgumentError.new unless args['list'].empty?
-      ci.each { |asset| puts "#{asset['name']}\t#{asset['id']}" }
-
-    when ['recheck']
-      fail ArgumentError.new if args['recheck'].empty?
-      args['recheck'].each do |file|
-        File.foreach(file) do |line|
-          line.chomp!
-          id = line.split("\t")[2]
-          detail = ci.detail(id).to_s.gsub("\n", ' ')
-          puts line + "\t" + detail
-        end
-      end
-
-    else
-      fail ArgumentError.new
-    end
-  rescue ArgumentError
-    abort 'Usage: --up GLOB --log LOG_FILE | --down ID | --list | --recheck LOG_FILE'
-  end
-
 end
 

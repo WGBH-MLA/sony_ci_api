@@ -1,4 +1,4 @@
-require_relative '../lib/sony_ci_admin'
+require_relative '../lib/sony-ci-api/sony_ci_admin'
 require 'tmpdir'
 
 describe SonyCiAdmin do
