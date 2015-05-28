@@ -2,27 +2,32 @@
 
 [![Gem Version](https://badge.fury.io/rb/sony-ci-api.svg)](http://badge.fury.io/rb/sony-ci-api)
 
-Provides an OO-interface to the [Sony Ci API](http://developers.cimediacloud.com/).
+Provides a [Ruby interface](http://www.rubydoc.info/gems/sony-ci-api) 
+to the [Sony Ci REST API](http://developers.cimediacloud.com/). 
 
-You will need to provide a configuration file that looks something like:
+For the examples below you will need to provide a configuration file in CWD
+that looks something like:
 ```
 username: you@example.org
 password: 'your-password'
 client_id: 32-hex-digits
 client_secret: 32-hex-digits
 workspace_id: 32-hex-digits
-``` 
+```
 
 ## Command-line usage
 
 ```
 $ ruby bin/sony-ci-api --list
 ```
-Assumes ci.yml is in the CWD.
 
 ## Library usage
 
-TODO
+```
+$ irb -Ilib -rsony-ci-api
+> ci = SonyCiAdmin.new(credentials_path: 'ci.yml')
+> ci.list_names # etc.
+```
 
 ## Development
 
