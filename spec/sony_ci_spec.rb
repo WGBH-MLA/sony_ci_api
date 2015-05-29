@@ -64,6 +64,12 @@ describe 'Sony Ci API' do
       it 'allows 6M files' do
         expect_big_upload(safe_ci, 6)
       end
+      xit 'allowd 701M files' do
+        # Reproducer for https://github.com/WGBH/sony-ci-api/issues/2
+        # Currently hitting a timeout:
+        # 408 REQUEST_TIMEOUT
+        expect_big_upload(safe_ci, 701)
+      end
     end
     
   end
