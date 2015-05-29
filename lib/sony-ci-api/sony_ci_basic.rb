@@ -63,6 +63,7 @@ class SonyCiBasic
         curl = Curl::Easy.http_get('https'"://api.cimediacloud.com/assets/#{asset_id}/download") do |c|
           add_headers(c)
         end
+        handle_errors(curl)
         url = JSON.parse(curl.body_str)['location']
         @@cache[asset_id] = { url: url, expires: Time.now + 3 * 60 * 60 }
       end

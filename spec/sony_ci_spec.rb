@@ -37,14 +37,14 @@ describe 'Sony Ci API' do
     
   describe 'upload / detail / download / delete' do
     # TODO: we're not currently catching HTTP error statuses.
-    xit 'blocks some filetypes (small files)' do
+    it 'blocks some filetypes (small files)' do
       ci = safe_ci
       Dir.mktmpdir do |dir|
         log_path = "#{dir}/log.txt"
         ['js', 'html', 'rb'].each do |disallowed_ext|
           path = "#{dir}/file-name.#{disallowed_ext}"
           File.write(path, "content doesn't matter")
-          expect { ci.upload(path, log_path) }.to raise_exception(/Upload failed/)
+          expect { ci.upload(path, log_path) }.to raise_exception(/400 Bad Request/)
         end
         expect(File.read(log_path)).to eq('')
       end
@@ -92,7 +92,13 @@ describe 'Sony Ci API' do
 
       ids = ci.map { |asset| asset['id'] }
       expect(ids.count).to eq(count + 1) # workspace itself is in list.
-      ids.each { |id| ci.delete(id) } # ci.each won't work, because you delete the data under your feet.
+      ids.each do |id|
+        begin
+          ci.delete(id) # ci.each won't work, because you delete the data under your feet.
+        rescue
+          # TODO: Why do we get 404s?
+        end
+      end
       expect(ci.map { |asset| asset['id'] }.count).to eq(1) # workspace can't be deleted.
     end
   end
