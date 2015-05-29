@@ -3,7 +3,12 @@
 [![Gem Version](https://badge.fury.io/rb/sony-ci-api.svg)](http://badge.fury.io/rb/sony-ci-api)
 
 Provides a [Ruby interface](http://www.rubydoc.info/gems/sony-ci-api) 
-to the [Sony Ci REST API](http://developers.cimediacloud.com/). 
+to the [Sony Ci REST API](http://developers.cimediacloud.com/). Features:
+- Takes care of OAuth.
+- Single method handles upload of any size file.
+- Use `each` or `map` to iterate over everything in a workspace, rather worrying
+about batches of 50 at a time.
+- HTTP 4xx responses cause exceptions.
 
 For the examples below you will need to have a Sony Ci account,
 and your credentials must be provided in `config/ci.yml`,
