@@ -2,7 +2,7 @@ require_relative '../lib/sony-ci-api/sony_ci_admin'
 require 'tmpdir'
 
 describe SonyCiAdmin do
-  let(:credentials_path) { 'ci.yml' }
+  let(:credentials_path) { 'config/ci.yml' }
   let(:aapb_workspace_id) { '051303c1c1d24da7988128e6d2f56aa9' } # we make sure NOT to use this.
 
   it 'requires credentials' do
