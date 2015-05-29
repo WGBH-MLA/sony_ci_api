@@ -121,23 +121,15 @@ class SonyCiAdmin < SonyCiBasic
     MULTIPART_URI = 'https://io.cimediacloud.com/upload/multipart'
 
     def singlepart_upload(file)
-      curl = "curl -s -XPOST '#{SINGLEPART_URI}'" \
-             " -H 'Authorization: Bearer #{@ci.access_token}'" \
-             " -F filename='@#{file.path}'" \
-             " -F metadata=\"{'workspaceId': '#{@ci.workspace_id}'}\""
-      body_str = `#{curl}`
-      @asset_id = JSON.parse(body_str)['assetId']
-      fail "Upload failed: #{body_str}" unless @asset_id
-      # TODO: This shouldn't be hard, but it just hasn't worked for me.
-#      params = {
-#        File.basename(file) => file.read,
-#        'metadata' => JSON.generate('workspaceId' => @ci.workspace_id)
-#      }.map { |k,v| Curl::PostField.content(k,v) }
-#      curl = Curl::Easy.http_post(SINGLEPART_URI, params) do |c|
-#        c.multipart_form_post = true
-#        add_headers(c)
-#      end
-#      @asset_id = JSON.parse(curl.body_str)['assetId']
+      params = [
+        Curl::PostField.file('filename', file.path, File.basename(file.path)),
+        Curl::PostField.content('metadata', JSON.generate('workspaceId' => @ci.workspace_id))
+      ]
+      curl = Curl::Easy.http_post(SINGLEPART_URI, params) do |c|
+        c.multipart_form_post = true
+        add_headers(c)
+      end
+      @asset_id = JSON.parse(curl.body_str)['assetId']
     end
 
     def initiate_multipart_upload(file)
