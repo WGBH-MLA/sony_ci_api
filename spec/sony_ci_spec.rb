@@ -36,45 +36,36 @@ describe 'Sony Ci API' do
   end
     
   describe 'upload / detail / download / delete' do
-    # TODO: we're not currently catching HTTP error statuses.
-    it 'blocks some filetypes (small files)' do
-      ci = safe_ci
-      Dir.mktmpdir do |dir|
-        log_path = "#{dir}/log.txt"
-        ['js', 'html', 'rb'].each do |disallowed_ext|
-          path = "#{dir}/file-name.#{disallowed_ext}"
-          File.write(path, "content doesn't matter")
-          expect { ci.upload(path, log_path) }.to raise_exception(/400 Bad Request/)
+    
+    describe 'small files' do
+      it 'blocks some filetypes (small files)' do
+        Dir.mktmpdir do |dir|
+          log_path = "#{dir}/log.txt"
+          ['js', 'html', 'rb'].each do |disallowed_ext|
+            path = "#{dir}/file-name.#{disallowed_ext}"
+            File.write(path, "content doesn't matter")
+            expect { safe_ci.upload(path, log_path) }.to raise_exception(/400 Bad Request/)
+          end
+          expect(File.read(log_path)).to eq('')
         end
-        expect(File.read(log_path)).to eq('')
+      end
+
+      it 'allows other filetypes (small files)' do
+        Dir.mktmpdir do |dir|
+          log_path = "#{dir}/log.txt"
+          path = "#{dir}/small-file.txt"
+          File.write(path, 'lorem ipsum')
+          expect_upload(safe_ci, path, log_path)
+        end
       end
     end
 
-    it 'allows other filetypes (small files)' do
-      ci = safe_ci
-      Dir.mktmpdir do |dir|
-        log_path = "#{dir}/log.txt"
-        path = "#{dir}/small-file.txt"
-        File.write(path, 'lorem ipsum')
-        expect_upload(ci, path, log_path)
+    describe 'big files' do
+      it 'allows 6M files' do
+        expect_big_upload(safe_ci, 6)
       end
     end
-
-    it 'allows big files' do
-      ci = safe_ci
-      Dir.mktmpdir do |dir|
-        log_path = "#{dir}/log.txt"
-        path = "#{dir}/big-file.txt"
-        big_file = File.open(path, 'a')
-        (5 * 1024).times do |k|
-          big_file.write("#{k}K" + '.' * 1024 + "\n")
-        end
-        big_file.flush
-        expect(big_file.size).to be > (5 * 1024 * 1024)
-        expect(big_file.size).to be < (6 * 1024 * 1024)
-        expect_upload(ci, path, log_path)
-      end
-    end
+    
   end
     
   describe 'enumerator' do
@@ -111,6 +102,21 @@ describe 'Sony Ci API' do
     expect(ci.list_names.count).to eq(0),
                                    "Expected test workspace #{ci.workspace_id} to be empty, instead of #{ci.list_names}"
     ci
+  end
+  
+  def expect_big_upload(ci, megs)
+    Dir.mktmpdir do |dir|
+      log_path = "#{dir}/log.txt"
+      path = "#{dir}/big-file.txt"
+      big_file = File.open(path, 'a')
+      one_million_dollars = '$' * 1024 * 1024
+      megs.times do
+        big_file.write(one_million_dollars)
+      end
+      big_file.flush
+      expect(big_file.size).to be (megs * 1024 * 1024)
+      expect_upload(ci, path, log_path)
+    end
   end
 
   def expect_upload(ci, path, log_path)
