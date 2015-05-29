@@ -35,7 +35,7 @@ describe 'Sony Ci API' do
     end
   end
     
-  describe 'upload' do
+  describe 'upload / detail / download / delete' do
     it 'blocks some filetypes (small files)' do
       ci = safe_ci
       Dir.mktmpdir do |dir|
