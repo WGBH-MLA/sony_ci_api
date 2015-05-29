@@ -131,12 +131,13 @@ class SonyCiAdmin < SonyCiBasic
       # TODO: This shouldn't be hard, but it just hasn't worked for me.
 #      params = {
 #        File.basename(file) => file.read,
-#        'metadata' => JSON.generate({})
+#        'metadata' => JSON.generate('workspaceId' => @ci.workspace_id)
 #      }.map { |k,v| Curl::PostField.content(k,v) }
 #      curl = Curl::Easy.http_post(SINGLEPART_URI, params) do |c|
 #        c.multipart_form_post = true
 #        perform(c)
 #      end
+#      @asset_id = JSON.parse(curl.body_str)['assetId']
     end
 
     def initiate_multipart_upload(file)

@@ -6,6 +6,5 @@ class SonyCiClient #:nodoc:
     curl.verbose = @ci.verbose
     curl.headers['Authorization'] = "Bearer #{@ci.access_token}"
     curl.headers['Content-Type'] = mime if mime
-    curl.perform
   end
 end
