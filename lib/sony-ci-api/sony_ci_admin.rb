@@ -38,23 +38,7 @@ class SonyCiAdmin < SonyCiBasic
     Detailer.new(self).detail(asset_id)
   end
 
-  class CiClient #:nodoc:
-    # This class hierarchy might be excessive, but it gives us:
-    # - a single place for the `perform` method
-    # - and an isolated container for related private methods
-
-    def perform(curl, mime=nil)
-      # TODO: Is this actually working?
-      # curl.on_missing { |data| puts "4xx: #{data}" }
-      # curl.on_failure { |data| puts "5xx: #{data}" }
-      curl.verbose = @ci.verbose
-      curl.headers['Authorization'] = "Bearer #{@ci.access_token}"
-      curl.headers['Content-Type'] = mime if mime
-      curl.perform
-    end
-  end
-
-  class Detailer < CiClient #:nodoc:
+  class Detailer < SonyCiClient #:nodoc:
     def initialize(ci)
       @ci = ci
     end
@@ -67,7 +51,7 @@ class SonyCiAdmin < SonyCiBasic
     end
   end
 
-  class Deleter < CiClient #:nodoc:
+  class Deleter < SonyCiClient #:nodoc:
     def initialize(ci)
       @ci = ci
     end
@@ -79,7 +63,7 @@ class SonyCiAdmin < SonyCiBasic
     end
   end
 
-  class Lister < CiClient #:nodoc:
+  class Lister < SonyCiClient #:nodoc:
     include Enumerable
 
     def initialize(ci)
@@ -106,7 +90,7 @@ class SonyCiAdmin < SonyCiBasic
     end
   end
 
-  class Uploader < CiClient #:nodoc:
+  class Uploader < SonyCiClient #:nodoc:
     def initialize(ci, path, log_path)
       @ci = ci
       @path = path
