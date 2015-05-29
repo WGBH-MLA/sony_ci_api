@@ -37,7 +37,6 @@ class SonyCiBasic
       c.password = credentials['password']
       # c.on_missing { |curl, data| puts "4xx: #{data}" }
       # c.on_failure { |curl, data| puts "5xx: #{data}" }
-      c.perform
     end
 
     @access_token = JSON.parse(curl.body_str)['access_token']
