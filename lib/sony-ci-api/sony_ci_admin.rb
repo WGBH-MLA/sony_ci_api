@@ -45,7 +45,7 @@ class SonyCiAdmin < SonyCiBasic
 
     def detail(asset_id)
       curl = Curl::Easy.http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}") do |c|
-        perform(c)
+        add_headers(c)
       end
       JSON.parse(curl.body_str)
     end
@@ -58,7 +58,7 @@ class SonyCiAdmin < SonyCiBasic
 
     def delete(asset_id)
       Curl::Easy.http_delete('https:'"//api.cimediacloud.com/assets/#{asset_id}") do |c|
-        perform(c)
+        add_headers(c)
       end
     end
   end
@@ -73,7 +73,7 @@ class SonyCiAdmin < SonyCiBasic
     def list(limit, offset)
       curl = Curl::Easy.http_get('https:''//api.cimediacloud.com/workspaces/' \
                                  "#{@ci.workspace_id}/contents?limit=#{limit}&offset=#{offset}") do |c|
-        perform(c)
+        add_headers(c)
       end
       JSON.parse(curl.body_str)['items']
     end
@@ -135,7 +135,7 @@ class SonyCiAdmin < SonyCiBasic
 #      }.map { |k,v| Curl::PostField.content(k,v) }
 #      curl = Curl::Easy.http_post(SINGLEPART_URI, params) do |c|
 #        c.multipart_form_post = true
-#        perform(c)
+#        add_headers(c)
 #      end
 #      @asset_id = JSON.parse(curl.body_str)['assetId']
     end
@@ -145,20 +145,20 @@ class SonyCiAdmin < SonyCiBasic
                              'size' => file.size,
                              'workspaceId' => @ci.workspace_id)
       curl = Curl::Easy.http_post(MULTIPART_URI, params) do |c|
-        perform(c, 'application/json')
+        add_headers(c, 'application/json')
       end
       @asset_id = JSON.parse(curl.body_str)['assetId']
     end
 
     def do_multipart_upload_part(file)
       Curl::Easy.http_put("#{MULTIPART_URI}/#{@asset_id}/1", file.read) do |c|
-        perform(c, 'application/octet-stream')
+        add_headers(c, 'application/octet-stream')
       end
     end
 
     def complete_multipart_upload
       Curl::Easy.http_post("#{MULTIPART_URI}/#{@asset_id}/complete") do |c|
-        perform(c)
+        add_headers(c)
       end
     end
   end

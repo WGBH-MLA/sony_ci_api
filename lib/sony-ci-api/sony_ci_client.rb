@@ -1,5 +1,5 @@
 class SonyCiClient #:nodoc:
-  def perform(curl, mime=nil)
+  def add_headers(curl, mime=nil)
     # TODO: Is this actually working?
     # curl.on_missing { |data| puts "4xx: #{data}" }
     # curl.on_failure { |data| puts "5xx: #{data}" }
