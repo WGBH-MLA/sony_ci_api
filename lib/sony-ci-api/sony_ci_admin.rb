@@ -102,9 +102,12 @@ class SonyCiAdmin < SonyCiBasic
 
     def upload
       file = File.new(@path)
-      if file.size > 5 * 1024 * 1024
+      if file.size >= 5 * 1024 * 1024
         initiate_multipart_upload(file)
-        do_multipart_upload_part(file)
+        part = 0
+        while part do
+          part = do_multipart_upload_part(file, part) 
+        end
         complete_multipart_upload
       else
         singlepart_upload(file)
@@ -147,11 +150,16 @@ class SonyCiAdmin < SonyCiBasic
       @asset_id = JSON.parse(curl.body_str)['assetId']
     end
 
-    def do_multipart_upload_part(file)
-      curl = Curl::Easy.http_put("#{MULTIPART_URI}/#{@asset_id}/1", file.read) do |c|
+    CHUNK_SIZE = 10 * 1024 * 1024
+    
+    def do_multipart_upload_part(file, part)
+      fragment = file.read(CHUNK_SIZE)
+      return unless fragment
+      curl = Curl::Easy.http_put("#{MULTIPART_URI}/#{@asset_id}/#{part + 1}", fragment) do |c|
         add_headers(c, 'application/octet-stream')
       end
       handle_errors(curl)
+      return part + 1
     end
 
     def complete_multipart_upload
