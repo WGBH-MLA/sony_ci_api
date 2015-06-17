@@ -57,7 +57,7 @@ describe 'Mock Sony Ci API' do
         to_return(status: 200, headers: {}, body: "{\"assetId\":\"#{ASSET_ID}\"}")
       
       # After upload we get details for log:
-      stub_request(:get, "https://api.cimediacloud.com/assets/asset-id").
+      stub_request(:get, "https://api.cimediacloud.com/assets/#{ASSET_ID}").
          with(headers: OAUTH).
          to_return(status: 200, headers: {}, body: "{}")
       
@@ -66,7 +66,30 @@ describe 'Mock Sony Ci API' do
     end
   end
   
-  # TODO: test large upload
+  # TODO: in progress
+  xit 'does large file upload' do
+    ci = SonyCiAdmin.new(credentials: CREDENTIALS)    
+    Dir.mktmpdir do |dir|
+      log_path = "#{dir}/log.txt"
+      name = 'large-file.txt'
+      path = "#{dir}/#{name}"
+      size = SonyCiAdmin::Uploader::CHUNK_SIZE * 2
+      File.write(path, 'X' * size)
+      
+      stub_request(:post, 'https://io.cimediacloud.com/upload/multipart').
+        with(body: "{\"name\":\"#{name}\",\"size\":#{size},\"workspaceId\":\"#{CREDENTIALS['workspace_id']}\"}",
+             headers: OAUTH.merge({'Content-Type'=>'application/json'})).
+        to_return(status: 201, body: "{\"assetId\": \"#{ASSET_ID}\"}", headers: {})
+      
+      stub_request(:put, "https://io.cimediacloud.com/upload/multipart/#{ASSET_ID}/1").
+         with(body: 'X' * size,
+              headers: OAUTH.merge({'Content-Type'=>'application/octet-stream', 'Expect'=>''})).
+         to_return(:status => 200, :body => "", :headers => {})
+      
+      ci_id = ci.upload(path, log_path)
+      expect(ci_id).to eq ASSET_ID
+    end
+  end
   
   it 'does list' do
     ci = SonyCiAdmin.new(credentials: CREDENTIALS)
