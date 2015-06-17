@@ -89,7 +89,16 @@ describe 'Mock Sony Ci API' do
     expect(ci.list(limit, offset)).to eq list
   end
   
-  # TODO: details
+  it 'does details' do
+    ci = SonyCiAdmin.new(credentials: CREDENTIALS)
+    details = {'id' => ASSET_ID, 'name' => 'video.mp3'} # IRL there is more here.
+    
+    stub_request(:get, "https://api.cimediacloud.com/assets/#{ASSET_ID}").
+      with(headers: OAUTH).
+      to_return(status: 200, headers: {}, body: JSON.generate(details))
+    
+    expect(ci.detail(ASSET_ID)).to eq details
+  end
   
   # TODO: delete
 end
