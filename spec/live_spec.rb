@@ -1,7 +1,7 @@
 require_relative '../lib/sony-ci-api/sony_ci_admin'
 require 'tmpdir'
 
-describe 'Sony Ci API' do
+describe 'Real Sony Ci API' do
   let(:credentials_path) { 'config/ci.yml' }
 
   describe 'validation' do

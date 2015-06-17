@@ -1,7 +1,10 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    addressable (2.3.8)
     coderay (1.1.0)
+    crack (0.4.2)
+      safe_yaml (~> 1.0.0)
     curb (0.8.8)
     diff-lcs (1.2.5)
     method_source (0.8.2)
@@ -24,7 +27,11 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.2.0)
     rspec-support (3.2.2)
+    safe_yaml (1.0.3)
     slop (3.6.0)
+    webmock (1.18.0)
+      addressable (>= 2.3.6)
+      crack (>= 0.3.2)
 
 PLATFORMS
   ruby
@@ -34,3 +41,4 @@ DEPENDENCIES
   pry
   pry-nav
   rspec
+  webmock
