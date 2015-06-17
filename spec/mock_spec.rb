@@ -100,5 +100,25 @@ describe 'Mock Sony Ci API' do
     expect(ci.detail(ASSET_ID)).to eq details
   end
   
-  # TODO: delete
+  it 'does delete' do
+    ci = SonyCiAdmin.new(credentials: CREDENTIALS)
+    
+    stub_request(:delete, "https://api.cimediacloud.com/assets/#{ASSET_ID}").
+      with(headers: OAUTH).
+      to_return(status: 200, headers: {}, body: 'IRL JSON response goes here.')
+    
+    expect { ci.delete(ASSET_ID) }.not_to raise_exception
+  end
+  
+  it 'does download' do
+    ci = SonyCiAdmin.new(credentials: CREDENTIALS)
+    
+    temp_url = 'https://s3.amazon.com/ci/temp-url.mp3'
+    
+    stub_request(:get, "https://api.cimediacloud.com/assets/#{ASSET_ID}/download").
+      with(headers: OAUTH).
+      to_return(status: 200, headers: {}, body: JSON.generate({ 'location' => temp_url }))
+    
+    expect(ci.download(ASSET_ID)).to eq temp_url
+  end
 end
