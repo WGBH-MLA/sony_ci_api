@@ -121,4 +121,17 @@ describe 'Mock Sony Ci API' do
     
     expect(ci.download(ASSET_ID)).to eq temp_url
   end
+  
+  describe 'exceptions' do
+    it 'throws exception for 400' do
+      BAD_ID = 'bad-id'
+      ci = SonyCiAdmin.new(credentials: CREDENTIALS)
+
+      stub_request(:get, "https://api.cimediacloud.com/assets/#{BAD_ID}/download").
+        with(headers: OAUTH).
+        to_return(status: 400, headers: {})
+
+      expect { ci.download(BAD_ID) }.to raise_error
+    end
+  end
 end
