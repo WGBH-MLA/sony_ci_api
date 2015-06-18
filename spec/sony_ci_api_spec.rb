@@ -3,7 +3,7 @@ require 'yaml'
 require 'tmpdir'
 
 describe 'Sony Ci API' do
-  describe 'Real Sony Ci API' do
+  describe 'Real Sony Ci API', not_on_travis: true do
     let(:credentials_path) { File.expand_path('../../config/ci.yml', __FILE__) }
 
     describe 'validation' do
