@@ -1,6 +1,7 @@
 # sony-ci-api
 
 [![Gem Version](https://badge.fury.io/rb/sony-ci-api.svg)](http://badge.fury.io/rb/sony-ci-api)
+[![Build Status](https://travis-ci.org/WGBH/sony-ci-api.svg)](https://travis-ci.org/WGBH/sony-ci-api)
 
 Provides a [Ruby interface](http://www.rubydoc.info/gems/sony-ci-api) 
 to the [Sony Ci REST API](http://developers.cimediacloud.com/). Features:
