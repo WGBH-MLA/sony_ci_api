@@ -1,6 +1,7 @@
 require 'yaml'
 require 'curb'
 require 'json'
+require_relative 'sony_ci_client'
 
 class SonyCiBasic
   attr_reader :access_token
@@ -36,7 +37,6 @@ class SonyCiBasic
       c.password = credentials['password']
       # c.on_missing { |curl, data| puts "4xx: #{data}" }
       # c.on_failure { |curl, data| puts "5xx: #{data}" }
-      c.perform
     end
 
     @access_token = JSON.parse(curl.body_str)['access_token']
@@ -50,23 +50,7 @@ class SonyCiBasic
     Downloader.new(self).download(asset_id)
   end
 
-  class CiClient #:nodoc:
-    # This class hierarchy might be excessive, but it gives us:
-    # - a single place for the `perform` method
-    # - and an isolated container for related private methods
-
-    def perform(curl, mime=nil)
-      # TODO: Is this actually working?
-      # curl.on_missing { |data| puts "4xx: #{data}" }
-      # curl.on_failure { |data| puts "5xx: #{data}" }
-      curl.verbose = @ci.verbose
-      curl.headers['Authorization'] = "Bearer #{@ci.access_token}"
-      curl.headers['Content-Type'] = mime if mime
-      curl.perform
-    end
-  end
-
-  class Downloader < CiClient #:nodoc:
+  class Downloader < SonyCiClient #:nodoc:
     @@cache = {}
 
     def initialize(ci)
@@ -76,9 +60,11 @@ class SonyCiBasic
     def download(asset_id)
       hit = @@cache[asset_id]
       if !hit || hit[:expires] < Time.now
+        
         curl = Curl::Easy.http_get('https'"://api.cimediacloud.com/assets/#{asset_id}/download") do |c|
-          perform(c)
+          add_headers(c)
         end
+        handle_errors(curl)
         url = JSON.parse(curl.body_str)['location']
         @@cache[asset_id] = { url: url, expires: Time.now + 3 * 60 * 60 }
       end

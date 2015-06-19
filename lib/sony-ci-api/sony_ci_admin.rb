@@ -38,48 +38,34 @@ class SonyCiAdmin < SonyCiBasic
     Detailer.new(self).detail(asset_id)
   end
 
-  class CiClient #:nodoc:
-    # This class hierarchy might be excessive, but it gives us:
-    # - a single place for the `perform` method
-    # - and an isolated container for related private methods
-
-    def perform(curl, mime=nil)
-      # TODO: Is this actually working?
-      # curl.on_missing { |data| puts "4xx: #{data}" }
-      # curl.on_failure { |data| puts "5xx: #{data}" }
-      curl.verbose = @ci.verbose
-      curl.headers['Authorization'] = "Bearer #{@ci.access_token}"
-      curl.headers['Content-Type'] = mime if mime
-      curl.perform
-    end
-  end
-
-  class Detailer < CiClient #:nodoc:
+  class Detailer < SonyCiClient #:nodoc:
     def initialize(ci)
       @ci = ci
     end
 
     def detail(asset_id)
       curl = Curl::Easy.http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}") do |c|
-        perform(c)
+        add_headers(c)
       end
+      handle_errors(curl)
       JSON.parse(curl.body_str)
     end
   end
 
-  class Deleter < CiClient #:nodoc:
+  class Deleter < SonyCiClient #:nodoc:
     def initialize(ci)
       @ci = ci
     end
 
     def delete(asset_id)
-      Curl::Easy.http_delete('https:'"//api.cimediacloud.com/assets/#{asset_id}") do |c|
-        perform(c)
+      curl = Curl::Easy.http_delete('https:'"//api.cimediacloud.com/assets/#{asset_id}") do |c|
+        add_headers(c)
       end
+      handle_errors(curl)
     end
   end
 
-  class Lister < CiClient #:nodoc:
+  class Lister < SonyCiClient #:nodoc:
     include Enumerable
 
     def initialize(ci)
@@ -89,8 +75,9 @@ class SonyCiAdmin < SonyCiBasic
     def list(limit, offset)
       curl = Curl::Easy.http_get('https:''//api.cimediacloud.com/workspaces/' \
                                  "#{@ci.workspace_id}/contents?limit=#{limit}&offset=#{offset}") do |c|
-        perform(c)
+        add_headers(c)
       end
+      handle_errors(curl)
       JSON.parse(curl.body_str)['items']
     end
 
@@ -106,7 +93,7 @@ class SonyCiAdmin < SonyCiBasic
     end
   end
 
-  class Uploader < CiClient #:nodoc:
+  class Uploader < SonyCiClient #:nodoc:
     def initialize(ci, path, log_path)
       @ci = ci
       @path = path
@@ -115,9 +102,12 @@ class SonyCiAdmin < SonyCiBasic
 
     def upload
       file = File.new(@path)
-      if file.size > 5 * 1024 * 1024
+      if file.size >= 5 * 1024 * 1024
         initiate_multipart_upload(file)
-        do_multipart_upload_part(file)
+        part = 0
+        while part do
+          part = do_multipart_upload_part(file, part) 
+        end
         complete_multipart_upload
       else
         singlepart_upload(file)
@@ -137,22 +127,16 @@ class SonyCiAdmin < SonyCiBasic
     MULTIPART_URI = 'https://io.cimediacloud.com/upload/multipart'
 
     def singlepart_upload(file)
-      curl = "curl -s -XPOST '#{SINGLEPART_URI}'" \
-             " -H 'Authorization: Bearer #{@ci.access_token}'" \
-             " -F filename='@#{file.path}'" \
-             " -F metadata=\"{'workspaceId': '#{@ci.workspace_id}'}\""
-      body_str = `#{curl}`
-      @asset_id = JSON.parse(body_str)['assetId']
-      fail "Upload failed: #{body_str}" unless @asset_id
-      # TODO: This shouldn't be hard, but it just hasn't worked for me.
-#      params = {
-#        File.basename(file) => file.read,
-#        'metadata' => JSON.generate({})
-#      }.map { |k,v| Curl::PostField.content(k,v) }
-#      curl = Curl::Easy.http_post(SINGLEPART_URI, params) do |c|
-#        c.multipart_form_post = true
-#        perform(c)
-#      end
+      params = [
+        Curl::PostField.file('filename', file.path, File.basename(file.path)),
+        Curl::PostField.content('metadata', JSON.generate('workspaceId' => @ci.workspace_id))
+      ]
+      curl = Curl::Easy.http_post(SINGLEPART_URI, params) do |c|
+        c.multipart_form_post = true
+        add_headers(c)
+      end
+      handle_errors(curl)
+      @asset_id = JSON.parse(curl.body_str)['assetId']
     end
 
     def initiate_multipart_upload(file)
@@ -160,21 +144,29 @@ class SonyCiAdmin < SonyCiBasic
                              'size' => file.size,
                              'workspaceId' => @ci.workspace_id)
       curl = Curl::Easy.http_post(MULTIPART_URI, params) do |c|
-        perform(c, 'application/json')
+        add_headers(c, 'application/json')
       end
+      handle_errors(curl)
       @asset_id = JSON.parse(curl.body_str)['assetId']
     end
 
-    def do_multipart_upload_part(file)
-      Curl::Easy.http_put("#{MULTIPART_URI}/#{@asset_id}/1", file.read) do |c|
-        perform(c, 'application/octet-stream')
+    CHUNK_SIZE = 10 * 1024 * 1024
+    
+    def do_multipart_upload_part(file, part)
+      fragment = file.read(CHUNK_SIZE)
+      return unless fragment
+      curl = Curl::Easy.http_put("#{MULTIPART_URI}/#{@asset_id}/#{part + 1}", fragment) do |c|
+        add_headers(c, 'application/octet-stream')
       end
+      handle_errors(curl)
+      return part + 1
     end
 
     def complete_multipart_upload
-      Curl::Easy.http_post("#{MULTIPART_URI}/#{@asset_id}/complete") do |c|
-        perform(c)
+      curl = Curl::Easy.http_post("#{MULTIPART_URI}/#{@asset_id}/complete") do |c|
+        add_headers(c)
       end
+      handle_errors(curl)
     end
   end
 end

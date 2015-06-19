@@ -10,7 +10,7 @@ end
 
 ci = SonyCiAdmin.new(
   # verbose: true,
-  credentials_path: 'ci.yml')
+  credentials_path: 'config/ci.yml')
 
 begin
   case args.keys.sort
