@@ -9,6 +9,6 @@ class SonyCiClient #:nodoc:
     curl.headers['Content-Type'] = mime if mime
   end
   def handle_errors(curl)
-    raise "#{curl.status}: #{curl.url}" if curl.response_code.to_s !~ /^2../
+    raise "#{curl.status}: #{curl.url}\nHEADERS: #{curl.headers}\nPOST: #{curl.post_body}\nRESPONSE: #{curl.body}" if curl.response_code.to_s !~ /^2../
   end
 end

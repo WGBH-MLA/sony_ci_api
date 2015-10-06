@@ -37,6 +37,10 @@ class SonyCiAdmin < SonyCiBasic
   def detail(asset_id)
     Detailer.new(self).detail(asset_id)
   end
+  
+  def multi_details(asset_ids, fields)
+    Detailer.new(self).multi_details(asset_ids, fields)
+  end
 
   class Detailer < SonyCiClient #:nodoc:
     def initialize(ci)
@@ -46,6 +50,19 @@ class SonyCiAdmin < SonyCiBasic
     def detail(asset_id)
       curl = Curl::Easy.http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}") do |c|
         add_headers(c)
+      end
+      handle_errors(curl)
+      JSON.parse(curl.body_str)
+    end
+    
+    def multi_details(asset_ids, fields)
+      curl = Curl::Easy.http_post('https:'"//api.cimediacloud.com/assets/details/bulk",
+                                   JSON.generate({
+                                     'assetIds' => asset_ids,
+                                     'fields' => fields
+                                   })
+                                 ) do |c|
+        add_headers(c, 'application/json')
       end
       handle_errors(curl)
       JSON.parse(curl.body_str)

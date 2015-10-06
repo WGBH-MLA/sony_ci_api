@@ -37,7 +37,7 @@ describe 'Sony Ci API' do
       end
     end
 
-    describe 'upload / detail / download / delete' do
+    describe 'upload / detail / multi_details / download / delete' do
 
       describe 'small files' do
         it 'blocks some filetypes (small files)' do
@@ -138,6 +138,18 @@ describe 'Sony Ci API' do
 
       detail = ci.detail(id)
       expect([detail['name'], detail['id']]).to eq([basename, id])
+      
+      multi_details = ci.multi_details([id], ['id'])
+      expect(multi_details).to eq({
+          "count" => 1,
+          "errorCount" => 0,
+          "errors" => [],
+          "items" => [{
+            "id"=>id,
+            "name"=>basename,
+            "kind"=>"Asset"
+          }]
+        })
 
       before = Time.now
       ci.download(id)
@@ -297,6 +309,17 @@ describe 'Sony Ci API' do
       stub_details
 
       expect(ci.detail(ASSET_ID)).to eq DETAILS
+    end
+    
+    it 'does multi_details' do
+      ci = SonyCiAdmin.new(credentials: CREDENTIALS)
+
+      stub_request(:post, "https://api.cimediacloud.com/assets/details/bulk").
+         with(:body => "{\"assetIds\":[\"asset-id\"],\"fields\":[\"field_1\"]}",
+              :headers => {'Authorization'=>'Bearer 32-hex-access-token'}).
+         to_return(status: 200, body: JSON.generate(DETAILS), headers: {}) # TODO: not sure if this is accurate.
+      
+      expect(ci.multi_details([ASSET_ID], ['field_1'])).to eq DETAILS
     end
 
     it 'does delete' do
