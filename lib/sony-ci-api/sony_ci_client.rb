@@ -1,5 +1,5 @@
 class SonyCiClient #:nodoc:
-  def add_headers(curl, mime=nil)
+  def add_headers(curl, mime = nil)
     # on_missing and on_failure exist...
     # but any exceptions are caught and turned into warnings:
     # You need to check the response code at the end
@@ -8,7 +8,8 @@ class SonyCiClient #:nodoc:
     curl.headers['Authorization'] = "Bearer #{@ci.access_token}"
     curl.headers['Content-Type'] = mime if mime
   end
+
   def handle_errors(curl)
-    raise "#{curl.status}: #{curl.url}\nHEADERS: #{curl.headers}\nPOST: #{curl.post_body}\nRESPONSE: #{curl.body}" if curl.response_code.to_s !~ /^2../
+    fail "#{curl.status}: #{curl.url}\nHEADERS: #{curl.headers}\nPOST: #{curl.post_body}\nRESPONSE: #{curl.body}" if curl.response_code.to_s !~ /^2../
   end
 end

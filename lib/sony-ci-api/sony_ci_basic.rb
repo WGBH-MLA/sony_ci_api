@@ -9,7 +9,7 @@ class SonyCiBasic
   attr_reader :workspace_id
 
   # Either +credentials_path+ or a +credentials+ object itself must be supplied.
-  def initialize(opts={}) # rubocop:disable PerceivedComplexity, CyclomaticComplexity
+  def initialize(opts = {}) # rubocop:disable PerceivedComplexity, CyclomaticComplexity
     unrecognized_opts = opts.keys - [:verbose, :credentials_path, :credentials]
     fail "Unrecognized options #{unrecognized_opts}" unless unrecognized_opts == []
 
@@ -20,7 +20,7 @@ class SonyCiBasic
     credentials = opts[:credentials] || YAML.load_file(opts[:credentials_path])
 
     credentials.keys.sort.tap do |actual|
-      expected = ['username', 'password', 'client_id', 'client_secret', 'workspace_id'].sort
+      expected = %w(username password client_id client_secret workspace_id).sort
       fail "Expected #{expected} in ci credentials, not #{actual}" if actual != expected
     end
 
@@ -60,7 +60,7 @@ class SonyCiBasic
     def download(asset_id)
       hit = @@cache[asset_id]
       if !hit || hit[:expires] < Time.now
-        
+
         curl = Curl::Easy.http_get('https'"://api.cimediacloud.com/assets/#{asset_id}/download") do |c|
           add_headers(c)
         end
