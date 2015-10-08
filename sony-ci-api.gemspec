@@ -1,8 +1,8 @@
 Gem::Specification.new do |s|
   s.name        = 'sony-ci-api'
-  s.version     = '0.1.0'
+  s.version     = '0.1.1'
   s.executables << 'sony-ci-api'
-  s.date        = '2015-05-28'
+  s.date        = '2015-10-06'
   s.summary     = 'Sony Ci API'
   s.description = 'Wrapper for the Sony Ci API (http://developers.cimediacloud.com/)'
   s.authors     = ['Chuck McCallum']

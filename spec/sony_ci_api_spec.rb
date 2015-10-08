@@ -37,13 +37,12 @@ describe 'Sony Ci API' do
       end
     end
 
-    describe 'upload / detail / download / delete' do
-
+    describe 'upload / detail / multi_details / download / delete' do
       describe 'small files' do
         it 'blocks some filetypes (small files)' do
           Dir.mktmpdir do |dir|
             log_path = "#{dir}/log.txt"
-            ['js', 'html', 'rb'].each do |disallowed_ext|
+            %w(js html rb).each do |disallowed_ext|
               path = "#{dir}/file-name.#{disallowed_ext}"
               File.write(path, "content doesn't matter")
               expect { safe_ci.upload(path, log_path) }.to raise_exception(/400 Bad Request/)
@@ -72,7 +71,6 @@ describe 'Sony Ci API' do
           expect_big_upload(safe_ci, big)
         end
       end
-
     end
 
     describe 'enumerator' do
@@ -104,7 +102,7 @@ describe 'Sony Ci API' do
     def safe_ci
       workspace_id = YAML.load_file(credentials_path)['workspace_id']
       expect(workspace_id).to match(/^[0-9a-f]{32}$/)
-      ci = SonyCiAdmin.new(credentials_path: credentials_path) #, verbose: true) # helps with debugging
+      ci = SonyCiAdmin.new(credentials_path: credentials_path) # , verbose: true) # helps with debugging
       expect(ci.access_token).to match(/^[0-9a-f]{32}$/)
       expect(ci.list_names.count).to eq(0),
                                      "Expected test workspace #{ci.workspace_id} to be empty, instead of #{ci.list_names}"
@@ -139,6 +137,18 @@ describe 'Sony Ci API' do
       detail = ci.detail(id)
       expect([detail['name'], detail['id']]).to eq([basename, id])
 
+      multi_details = ci.multi_details([id], ['id'])
+      expect(multi_details).to eq({
+                                    'count' => 1,
+                                    'errorCount' => 0,
+                                    'errors' => [],
+                                    'items' => [{
+                                      'id' => id,
+                                      'name' => basename,
+                                      'kind' => 'Asset'
+                                    }]
+                                  })
+
       before = Time.now
       ci.download(id)
       middle = Time.now
@@ -161,25 +171,25 @@ describe 'Sony Ci API' do
       expect(ci.list_names.count).to eq(0)
     end
   end
-  
+
   describe 'Mock Sony Ci API' do
     CREDENTIALS = YAML.load_file(File.expand_path('../../config/ci.yml.sample', __FILE__))
     ACCESS_TOKEN = '32-hex-access-token'
     ASSET_ID = 'asset-id'
-    OAUTH = {'Authorization' => "Bearer #{ACCESS_TOKEN}"}
-    DETAILS = {'id' => ASSET_ID, 'name' => 'video.mp3'}
+    OAUTH = { 'Authorization' => "Bearer #{ACCESS_TOKEN}" }
+    DETAILS = { 'id' => ASSET_ID, 'name' => 'video.mp3' }
     LOG_RE = /^\d{4}-\d{2}-\d{2}.*\t(large|small)-file\.txt\tasset-id\t\{"id"=>"asset-id", "name"=>"video\.mp3"\}\n$/
 
     def stub_details
-      stub_request(:get, "https://api.cimediacloud.com/assets/#{ASSET_ID}").
-        with(headers: OAUTH).
-        to_return(status: 200, headers: {}, body: JSON.generate(DETAILS))
+      stub_request(:get, "https://api.cimediacloud.com/assets/#{ASSET_ID}")
+        .with(headers: OAUTH)
+        .to_return(status: 200, headers: {}, body: JSON.generate(DETAILS))
     end
 
     before(:all) do
       # TLDR: Mock tests must run last!
       # As soon as WebMock is required, it monkey patches Net::HTTP, and making
-      # a regular network request becomes much harder. To get around that, 
+      # a regular network request becomes much harder. To get around that,
       # we always run these tests in order, and only load WebMock when the other
       # tests have completed.
       require 'webmock/rspec'
@@ -190,12 +200,12 @@ describe 'Sony Ci API' do
 
       user_password = "#{URI.encode(CREDENTIALS['username'])}:#{URI.encode(CREDENTIALS['password'])}"
 
-      stub_request(:post, "https://#{user_password}@api.cimediacloud.com/oauth2/token").
-        with(body: URI.encode_www_form(
-                    'grant_type' => 'password',
-                    'client_id' => CREDENTIALS['client_id'],
-                    'client_secret' => CREDENTIALS['client_secret'])).
-        to_return(status: 200, headers: {}, body: <<-EOF
+      stub_request(:post, "https://#{user_password}@api.cimediacloud.com/oauth2/token")
+        .with(body: URI.encode_www_form(
+          'grant_type' => 'password',
+          'client_id' => CREDENTIALS['client_id'],
+          'client_secret' => CREDENTIALS['client_secret']))
+        .to_return(status: 200, headers: {}, body: <<-EOF
           {
             "access_token": "#{ACCESS_TOKEN}",
             "expires_in": 3600,
@@ -203,7 +213,7 @@ describe 'Sony Ci API' do
             "refresh_token": "32-hex-which-we-are-not-using"
           }
           EOF
-        )
+                  )
     end
 
     it 'does OAuth' do
@@ -213,18 +223,18 @@ describe 'Sony Ci API' do
 
     describe 'uploads' do
       it 'does small files' do
-        ci = SonyCiAdmin.new(credentials: CREDENTIALS)    
+        ci = SonyCiAdmin.new(credentials: CREDENTIALS)
         Dir.mktmpdir do |dir|
           log_path = "#{dir}/log.txt"
           path = "#{dir}/small-file.txt"
           File.write(path, "doesn't matter")
 
-          stub_request(:post, "https://io.cimediacloud.com/upload").
-            with(body: URI.encode_www_form(
-                  'filename' => path,
-                  'metadata' => "{\"workspaceId\":\"#{CREDENTIALS['workspace_id']}\"}"),
-                 headers: OAUTH).
-            to_return(status: 200, headers: {}, body: "{\"assetId\":\"#{ASSET_ID}\"}")
+          stub_request(:post, 'https://io.cimediacloud.com/upload')
+            .with(body: URI.encode_www_form(
+              'filename' => path,
+              'metadata' => "{\"workspaceId\":\"#{CREDENTIALS['workspace_id']}\"}"),
+                  headers: OAUTH)
+            .to_return(status: 200, headers: {}, body: "{\"assetId\":\"#{ASSET_ID}\"}")
 
           # After upload we get details for log:
           stub_details
@@ -236,7 +246,7 @@ describe 'Sony Ci API' do
       end
 
       it 'does big files' do
-        ci = SonyCiAdmin.new(credentials: CREDENTIALS)    
+        ci = SonyCiAdmin.new(credentials: CREDENTIALS)
         Dir.mktmpdir do |dir|
           log_path = "#{dir}/log.txt"
           name = 'large-file.txt'
@@ -244,21 +254,21 @@ describe 'Sony Ci API' do
           size = SonyCiAdmin::Uploader::CHUNK_SIZE * 2
           File.write(path, 'X' * size)
 
-          stub_request(:post, 'https://io.cimediacloud.com/upload/multipart').
-            with(body: "{\"name\":\"#{name}\",\"size\":#{size},\"workspaceId\":\"#{CREDENTIALS['workspace_id']}\"}",
-                 headers: OAUTH.merge({'Content-Type'=>'application/json'})).
-            to_return(status: 201, body: "{\"assetId\": \"#{ASSET_ID}\"}", headers: {})
+          stub_request(:post, 'https://io.cimediacloud.com/upload/multipart')
+            .with(body: "{\"name\":\"#{name}\",\"size\":#{size},\"workspaceId\":\"#{CREDENTIALS['workspace_id']}\"}",
+                  headers: OAUTH.merge({ 'Content-Type' => 'application/json' }))
+            .to_return(status: 201, body: "{\"assetId\": \"#{ASSET_ID}\"}", headers: {})
 
           (1..2).each do |i|
-            stub_request(:put, "https://io.cimediacloud.com/upload/multipart/#{ASSET_ID}/#{i}").
-               with(body: 'X' * SonyCiAdmin::Uploader::CHUNK_SIZE,
-                    headers: OAUTH.merge({'Content-Type'=>'application/octet-stream', 'Expect'=>''})).
-               to_return(status: 200, body: "", headers: {})
+            stub_request(:put, "https://io.cimediacloud.com/upload/multipart/#{ASSET_ID}/#{i}")
+              .with(body: 'X' * SonyCiAdmin::Uploader::CHUNK_SIZE,
+                    headers: OAUTH.merge({ 'Content-Type' => 'application/octet-stream', 'Expect' => '' }))
+              .to_return(status: 200, body: '', headers: {})
           end
 
-          stub_request(:post, "https://io.cimediacloud.com/upload/multipart/asset-id/complete").
-             with(headers: OAUTH).
-             to_return(status: 200, body: "", headers: {})
+          stub_request(:post, 'https://io.cimediacloud.com/upload/multipart/asset-id/complete')
+            .with(headers: OAUTH)
+            .to_return(status: 200, body: '', headers: {})
 
           # After upload we get details for log:
           stub_details
@@ -274,11 +284,11 @@ describe 'Sony Ci API' do
       ci = SonyCiAdmin.new(credentials: CREDENTIALS)
       limit = 10
       offset = 20
-      list = [{"kind"=>"asset", "id"=>ASSET_ID}] # IRL there is more here.
+      list = [{ 'kind' => 'asset', 'id' => ASSET_ID }] # IRL there is more here.
 
-      stub_request(:get, "https://api.cimediacloud.com/workspaces/#{CREDENTIALS['workspace_id']}/contents?limit=#{limit}&offset=#{offset}").
-        with(headers: OAUTH).
-        to_return(status: 200, headers: {}, body: <<-EOF
+      stub_request(:get, "https://api.cimediacloud.com/workspaces/#{CREDENTIALS['workspace_id']}/contents?limit=#{limit}&offset=#{offset}")
+        .with(headers: OAUTH)
+        .to_return(status: 200, headers: {}, body: <<-EOF
           {
             "limit": #{limit},
             "offset": #{offset},
@@ -286,7 +296,7 @@ describe 'Sony Ci API' do
             "items": #{JSON.generate(list)}
           }
           EOF
-        )
+                  )
 
       expect(ci.list(limit, offset)).to eq list
     end
@@ -299,12 +309,23 @@ describe 'Sony Ci API' do
       expect(ci.detail(ASSET_ID)).to eq DETAILS
     end
 
+    it 'does multi_details' do
+      ci = SonyCiAdmin.new(credentials: CREDENTIALS)
+
+      stub_request(:post, 'https://api.cimediacloud.com/assets/details/bulk')
+        .with(body: "{\"assetIds\":[\"asset-id\"],\"fields\":[\"field_1\"]}",
+              headers: { 'Authorization' => 'Bearer 32-hex-access-token' })
+        .to_return(status: 200, body: JSON.generate(DETAILS), headers: {}) # TODO: not sure if this is accurate.
+
+      expect(ci.multi_details([ASSET_ID], ['field_1'])).to eq DETAILS
+    end
+
     it 'does delete' do
       ci = SonyCiAdmin.new(credentials: CREDENTIALS)
 
-      stub_request(:delete, "https://api.cimediacloud.com/assets/#{ASSET_ID}").
-        with(headers: OAUTH).
-        to_return(status: 200, headers: {}, body: 'IRL JSON response goes here.')
+      stub_request(:delete, "https://api.cimediacloud.com/assets/#{ASSET_ID}")
+        .with(headers: OAUTH)
+        .to_return(status: 200, headers: {}, body: 'IRL JSON response goes here.')
 
       expect { ci.delete(ASSET_ID) }.not_to raise_exception
     end
@@ -314,9 +335,9 @@ describe 'Sony Ci API' do
 
       temp_url = 'https://s3.amazon.com/ci/temp-url.mp3'
 
-      stub_request(:get, "https://api.cimediacloud.com/assets/#{ASSET_ID}/download").
-        with(headers: OAUTH).
-        to_return(status: 200, headers: {}, body: JSON.generate({ 'location' => temp_url }))
+      stub_request(:get, "https://api.cimediacloud.com/assets/#{ASSET_ID}/download")
+        .with(headers: OAUTH)
+        .to_return(status: 200, headers: {}, body: JSON.generate({ 'location' => temp_url }))
 
       expect(ci.download(ASSET_ID)).to eq temp_url
     end
@@ -326,13 +347,12 @@ describe 'Sony Ci API' do
         BAD_ID = 'bad-id'
         ci = SonyCiAdmin.new(credentials: CREDENTIALS)
 
-        stub_request(:get, "https://api.cimediacloud.com/assets/#{BAD_ID}/download").
-          with(headers: OAUTH).
-          to_return(status: 400, headers: {})
+        stub_request(:get, "https://api.cimediacloud.com/assets/#{BAD_ID}/download")
+          .with(headers: OAUTH)
+          .to_return(status: 400, headers: {})
 
         expect { ci.download(BAD_ID) }.to raise_error
       end
     end
   end
-
 end

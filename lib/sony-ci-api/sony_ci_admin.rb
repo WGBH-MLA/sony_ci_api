@@ -19,7 +19,7 @@ class SonyCiAdmin < SonyCiBasic
   end
 
   # Full metadata for a windowed set of items.
-  def list(limit=50, offset=0)
+  def list(limit = 50, offset = 0)
     Lister.new(self).list(limit, offset)
   end
 
@@ -38,6 +38,10 @@ class SonyCiAdmin < SonyCiBasic
     Detailer.new(self).detail(asset_id)
   end
 
+  def multi_details(asset_ids, fields)
+    Detailer.new(self).multi_details(asset_ids, fields)
+  end
+
   class Detailer < SonyCiClient #:nodoc:
     def initialize(ci)
       @ci = ci
@@ -46,6 +50,17 @@ class SonyCiAdmin < SonyCiBasic
     def detail(asset_id)
       curl = Curl::Easy.http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}") do |c|
         add_headers(c)
+      end
+      handle_errors(curl)
+      JSON.parse(curl.body_str)
+    end
+
+    def multi_details(asset_ids, fields)
+      curl = Curl::Easy.http_post('https:''//api.cimediacloud.com/assets/details/bulk',
+                                  JSON.generate('assetIds' => asset_ids,
+                                                'fields' => fields)
+                                 ) do |c|
+        add_headers(c, 'application/json')
       end
       handle_errors(curl)
       JSON.parse(curl.body_str)
@@ -105,9 +120,7 @@ class SonyCiAdmin < SonyCiBasic
       if file.size >= 5 * 1024 * 1024
         initiate_multipart_upload(file)
         part = 0
-        while part do
-          part = do_multipart_upload_part(file, part) 
-        end
+        part = do_multipart_upload_part(file, part) while part
         complete_multipart_upload
       else
         singlepart_upload(file)
@@ -151,7 +164,7 @@ class SonyCiAdmin < SonyCiBasic
     end
 
     CHUNK_SIZE = 10 * 1024 * 1024
-    
+
     def do_multipart_upload_part(file, part)
       fragment = file.read(CHUNK_SIZE)
       return unless fragment
@@ -159,7 +172,7 @@ class SonyCiAdmin < SonyCiBasic
         add_headers(c, 'application/octet-stream')
       end
       handle_errors(curl)
-      return part + 1
+      part + 1
     end
 
     def complete_multipart_upload
@@ -170,4 +183,3 @@ class SonyCiAdmin < SonyCiBasic
     end
   end
 end
-

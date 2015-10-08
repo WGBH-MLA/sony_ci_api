@@ -15,7 +15,7 @@ ci = SonyCiAdmin.new(
 begin
   case args.keys.sort
 
-  when ['log', 'up']
+  when %w(log up)
     fail ArgumentError.new if args['log'].empty? || args['up'].empty?
     args['up'].each { |path| ci.upload(path, args['log'].first) }
 
