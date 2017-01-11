@@ -10,4 +10,5 @@ Gem::Specification.new do |s|
   s.files       = Dir.glob('lib/**/*')
   s.homepage    = 'https://github.com/WGBH/sony-ci-api'
   s.license     = 'MIT'
+  s.add_dependency('curb')
 end
