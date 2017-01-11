@@ -23,6 +23,11 @@ class SonyCiAdmin < SonyCiBasic
     Lister.new(self).list(limit, offset)
   end
 
+  # Full metadata for a queried subset of items.
+  def search(query, fields = nil, limit = 50, offset = 0)
+    Lister.new(self).search(query, fields, limit, offset)
+  end
+
   # Iterate over all items.
   def each
     Lister.new(self).each { |asset| yield asset }
@@ -38,8 +43,90 @@ class SonyCiAdmin < SonyCiBasic
     Detailer.new(self).detail(asset_id)
   end
 
+  # Get detailed metadata for multiple asset IDs.
   def multi_details(asset_ids, fields)
     Detailer.new(self).multi_details(asset_ids, fields)
+  end
+
+  # Get asset elements
+  def elements(asset_id)
+    Detailer.new(self).elements(asset_id)
+  end
+
+  # Copy assets to other workspaces.
+  def copy_assets(asset_ids, workspace_ids)
+    Asset.new(self).copy(asset_ids, workspace_ids)
+  end
+
+  def delete_asset(asset_id)
+    Asset.new(self).delete(asset_id)
+  end
+
+  # add metadata for a specific asset.
+  def add_metadata(asset_id, metadata)
+    Metadata.new(self).add(asset_id, metadata)
+  end
+
+  # update metadata for a specific asset.
+  def update_metadata(asset_id, name, value)
+    Metadata.new(self).update(asset_id, name, value)
+  end
+
+  # delete metadata for a specific asset.
+  def delete_metadata(asset_id, name)
+    Metadata.new(self).delete(asset_id, name)
+  end
+
+  # create a job on an asset
+  def create_job(asset_id, jobs)
+    Job.new(self).create(asset_id, jobs)
+  end
+
+  class Asset < SonyCiClient #:noddoc:
+    def initialize(ci)
+      @ci = ci
+    end
+
+    def copy(asset_ids, workspace_ids)
+      http_post('https://api.cimediacloud.com/assets/copy',
+        assetIds: asset_ids,
+        targets: workspace_ids.collect {|workspace_id| { workspaceId: workspace_id } }
+      )
+    end
+
+    def delete(asset_id)
+      http_delete('https:'"//api.cimediacloud.com/assets/#{asset_id}")
+    end
+  end
+
+  class Metadata < SonyCiClient #:nodoc:
+    def initialize(ci)
+      @ci = ci
+    end
+
+    def add(asset_id, metadata)
+      http_post("https://api.cimediacloud.com/assets/#{asset_id}/metadata",
+        metadata: metadata.collect {|name, value| { name: name, value: value }}
+        )
+    end
+
+    def update(asset_id, name, value)
+      http_put("https://api.cimediacloud.com/assets/#{asset_id}/metadata/#{URI.escape name}", value: value)
+    end
+
+    def delete(asset_id, name)
+      http_delete("https://api.cimediacloud.com/assets/#{asset_id}/metadata/#{URI.escape name}")
+    end
+  end
+
+  class Job < SonyCiClient #:nodoc:
+    def initialize(ci)
+      @ci = ci
+    end
+
+    def create(asset_id, jobs)
+      http_post("https://api.cimediacloud.com/assets/#{asset_id}/jobs", jobs)
+    end
   end
 
   class Detailer < SonyCiClient #:nodoc:
@@ -49,6 +136,11 @@ class SonyCiAdmin < SonyCiBasic
 
     def detail(asset_id)
       http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}")
+    end
+
+    def elements(asset_id)
+      response = http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}/elements")
+      response['items']
     end
 
     def multi_details(asset_ids, fields)
@@ -78,6 +170,14 @@ class SonyCiAdmin < SonyCiBasic
     def list(limit, offset)
       response = http_get('https:''//api.cimediacloud.com/workspaces/'"#{@ci.workspace_id}/contents",
         limit: limit, offset: offset
+        )
+      response['items']
+    end
+
+    def search(query, fields, limit, offset)
+      response = http_get('https:'"//api.cimediacloud.com/workspaces/#{@ci.workspace_id}/search",
+        query: query, fields: fields, limit: limit, offset: offset,
+        kind: :asset, orderBy: :createdOn, orderDirection: :desc
         )
       response['items']
     end
