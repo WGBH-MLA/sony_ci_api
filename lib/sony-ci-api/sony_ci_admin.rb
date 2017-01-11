@@ -48,22 +48,13 @@ class SonyCiAdmin < SonyCiBasic
     end
 
     def detail(asset_id)
-      curl = Curl::Easy.http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}") do |c|
-        add_headers(c)
-      end
-      handle_errors(curl)
-      JSON.parse(curl.body_str)
+      http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}")
     end
 
     def multi_details(asset_ids, fields)
-      curl = Curl::Easy.http_post('https:''//api.cimediacloud.com/assets/details/bulk',
-                                  JSON.generate('assetIds' => asset_ids,
-                                                'fields' => fields)
-                                 ) do |c|
-        add_headers(c, 'application/json')
-      end
-      handle_errors(curl)
-      JSON.parse(curl.body_str)
+      http_post('https:''//api.cimediacloud.com/assets/details/bulk',
+        assetIds: asset_ids, fields: fields
+        )
     end
   end
 
@@ -73,10 +64,7 @@ class SonyCiAdmin < SonyCiBasic
     end
 
     def delete(asset_id)
-      curl = Curl::Easy.http_delete('https:'"//api.cimediacloud.com/assets/#{asset_id}") do |c|
-        add_headers(c)
-      end
-      handle_errors(curl)
+      http_delete('https:'"//api.cimediacloud.com/assets/#{asset_id}")
     end
   end
 
@@ -88,12 +76,10 @@ class SonyCiAdmin < SonyCiBasic
     end
 
     def list(limit, offset)
-      curl = Curl::Easy.http_get('https:''//api.cimediacloud.com/workspaces/' \
-                                 "#{@ci.workspace_id}/contents?limit=#{limit}&offset=#{offset}") do |c|
-        add_headers(c)
-      end
-      handle_errors(curl)
-      JSON.parse(curl.body_str)['items']
+      response = http_get('https:''//api.cimediacloud.com/workspaces/'"#{@ci.workspace_id}/contents",
+        limit: limit, offset: offset
+        )
+      response['items']
     end
 
     def each
