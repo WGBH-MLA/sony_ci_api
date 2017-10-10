@@ -109,6 +109,10 @@ class SonyCiAdmin < SonyCiBasic
   end
 
   class Uploader < SonyCiClient #:nodoc:
+
+    # Chunk size 10 for multipart upload.
+    CHUNK_SIZE = 10 * 1024 * 1024
+
     def initialize(ci, path, log_path)
       @ci = ci
       @path = path
@@ -117,7 +121,7 @@ class SonyCiAdmin < SonyCiBasic
 
     def upload
       file = File.new(@path)
-      if file.size >= 5 * 1024 * 1024
+      if file.size >= CHUNK_SIZE
         initiate_multipart_upload(file)
         part = 0
         part = do_multipart_upload_part(file, part) while part
@@ -162,8 +166,6 @@ class SonyCiAdmin < SonyCiBasic
       handle_errors(curl)
       @asset_id = JSON.parse(curl.body_str)['assetId']
     end
-
-    CHUNK_SIZE = 10 * 1024 * 1024
 
     def do_multipart_upload_part(file, part)
       fragment = file.read(CHUNK_SIZE)
