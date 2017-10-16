@@ -1,4 +1,4 @@
-require_relative '../lib/sony-ci-api/sony_ci_admin'
+require_relative '../lib/sony_ci_api/sony_ci_admin'
 require 'yaml'
 require 'tmpdir'
 
@@ -159,7 +159,7 @@ describe 'Sony Ci API' do
       expect(after - middle).to be < 0.01
       expect(middle - before).to be > 0.1 # Often greater than 1
 
-      expect(download_url).to match(%r{^https://ci-buckets})
+      expect(download_url).to match(%r{^https://.*cloudfront.net\/cifiles})
       if File.new(path).size < 1024
         curl = Curl::Easy.http_get(download_url)
         curl.perform
@@ -198,9 +198,7 @@ describe 'Sony Ci API' do
     before(:each) do
       WebMock.disable_net_connect!
 
-      user_password = "#{URI.encode(CREDENTIALS['username'])}:#{URI.encode(CREDENTIALS['password'])}"
-
-      stub_request(:post, "https://#{user_password}@api.cimediacloud.com/oauth2/token")
+      stub_request(:post, "https://api.cimediacloud.com/oauth2/token")
         .with(body: URI.encode_www_form(
           'grant_type' => 'password',
           'client_id' => CREDENTIALS['client_id'],
