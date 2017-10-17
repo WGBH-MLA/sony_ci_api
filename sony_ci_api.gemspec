@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name        = 'sony_ci_api'
-  s.version     = '0.2.0'
+  s.version     = '0.2.1'
   s.executables << 'sony_ci_api'
   s.date        = '2015-10-06'
   s.summary     = 'Sony Ci API'
