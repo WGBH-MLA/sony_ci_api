@@ -1,13 +1,8 @@
 *.gem
 doc/
 
-# for a library or gem, you might want to ignore these files since the code is
-# intended to run in multiple environments; otherwise, check them in:
-# TODO: Do we agree with Github's advice? If you are doing dev work on the gem,
-# would it be useful to know a dependency set that's sure to work?
-#Gemfile.lock
-#.ruby-version
-#.ruby-gemset
+# Ignore Gemfile.lock to allow mutiple verions of compatible gems.
+Gemfile.lock
 
 # unless supporting rvm < 1.11.0 or doing something fancy, ignore this:
 .rvmrc
