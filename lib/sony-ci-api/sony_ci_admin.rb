@@ -43,6 +43,11 @@ class SonyCiAdmin < SonyCiBasic
     Detailer.new(self).detail(asset_id)
   end
 
+  # Get download links by asset ID.
+  def download(asset_id)
+    Detailer.new(self).download(asset_id)
+  end
+
   # Get detailed metadata for multiple asset IDs.
   def multi_details(asset_ids, fields)
     Detailer.new(self).multi_details(asset_ids, fields)
@@ -51,6 +56,11 @@ class SonyCiAdmin < SonyCiBasic
   # Get asset elements
   def elements(asset_id)
     Detailer.new(self).elements(asset_id)
+  end
+
+  # Get single element
+  def element(element_id)
+    Detailer.new(self).element(element_id)
   end
 
   # Copy assets to other workspaces.
@@ -78,8 +88,18 @@ class SonyCiAdmin < SonyCiBasic
   end
 
   # create a job on an asset
-  def create_job(asset_id, jobs)
-    Job.new(self).create(asset_id, jobs)
+  def create_job_for_asset(asset_id, jobs)
+    Job.new(self).create_for_asset(asset_id, jobs)
+  end
+
+  # create a general job
+  def create_job(jobs)
+    Job.new(self).create(jobs)
+  end
+
+  # get job status
+  def job_status(job_id)
+    Job.new(self).status(job_id)
   end
 
   class Asset < SonyCiClient #:noddoc:
@@ -124,8 +144,16 @@ class SonyCiAdmin < SonyCiBasic
       @ci = ci
     end
 
-    def create(asset_id, jobs)
+    def create_for_asset(asset_id, jobs)
       http_post("https://api.cimediacloud.com/assets/#{asset_id}/jobs", jobs)
+    end
+
+    def create(jobs)
+      http_post("https://api.cimediacloud.com/jobs", jobs)
+    end
+
+    def status(job_id)
+      http_get("https://api.cimediacloud.com/jobs/#{job_id}")
     end
   end
 
@@ -138,9 +166,18 @@ class SonyCiAdmin < SonyCiBasic
       http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}")
     end
 
+    def download(asset_id)
+      http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}/download")
+    end
+
     def elements(asset_id)
       response = http_get('https:'"//api.cimediacloud.com/assets/#{asset_id}/elements")
       response['items']
+    end
+
+    def element(element_id)
+      response = http_get('https:'"//api.cimediacloud.com/elements/#{element_id}")
+      response
     end
 
     def multi_details(asset_ids, fields)
