@@ -159,7 +159,7 @@ describe 'Sony Ci API' do
       expect(after - middle).to be < 0.01
       expect(middle - before).to be > 0.1 # Often greater than 1
 
-      expect(download_url).to match(%r{^https://.*cloudfront.net\/cifiles})
+      expect(download_url).to match(%r{^https://.*cdn01.cimediacloud.com\/cifiles})
       if File.new(path).size < 1024
         curl = Curl::Easy.http_get(download_url)
         curl.perform
@@ -196,6 +196,7 @@ describe 'Sony Ci API' do
     end
 
     before(:each) do
+      WebMock.enable!
       WebMock.disable_net_connect!
 
       stub_request(:post, "https://api.cimediacloud.com/oauth2/token")
